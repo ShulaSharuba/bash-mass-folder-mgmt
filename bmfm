@@ -1,0 +1,62 @@
+#!/bin/bash
+
+d_flag=''
+m_flag=''
+verbose='false'
+
+print_usage() {
+  printf "Usage: ..."
+}
+
+while getopts 'dhmv' flag; do
+  case "${flag}" in
+    d) d_flag='true' ;;
+    h) print_usage
+      exit 0 ;;
+    m) m_flag='true' ;;
+    *) print_usage
+      exit 1 ;;
+  esac
+done
+
+read -p "Enter number of files to match : " fNum
+
+list=()
+# Grab output from find command and add each line to array
+  while IFS= read -r line; do
+    list+=( "$line" )
+  done < <( find -type d )
+
+unset list[0] # Remove current dir
+list=( "${list[@]}" ) # Re-index array
+
+listLength=${#list[@]}
+  for (( i=0; i<${listLength}; i++ )); do
+    listCount+=( $(find "${list[$i]}" -type f | wc -l) )
+  done
+
+# if loops for processed outputs
+if [[ $m_flag = 'true' ]]; then
+  for i in "${!list[@]}"; do
+    if [[ "${listCount[i]}" = "${fNum}" ]]; then
+      output+=( $(echo -n "${list[$i]}" | sed 's|.*|"&\/"* |' ) )
+    fi
+  done
+# xclip option
+printf '%s ' "${output[@]}" | xclip -selection clipboard # Printf used to join the array
+
+
+elif [[ $d_flag = 'true' ]]; then
+  for i in "${!list[@]}"; do
+    if [[ "${listCount[i]}" = "${fNum}" ]]; then
+      echo -n "${list[$i]}" | sed 's|.*|"&\/" |'
+    fi
+  done
+
+else
+  for i in "${!list[@]}"; do
+    if [[ "${listCount[i]}" = "${fNum}" ]]; then
+      echo "${list[$i]}"
+    fi
+  done
+fi
