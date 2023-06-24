@@ -3,6 +3,7 @@
 d_flag=''
 m_flag=''
 fNum=''
+p_flag=''
 verbose='false'
 x_flag=''
 
@@ -10,39 +11,45 @@ print_usage() {
   printf "Usage: ..."
 }
 
-while getopts 'dhmn:vx' flag; do
+# Defining flags
+while getopts 'dhmn:pvx' flag; do
   case "${flag}" in
     d) d_flag='true' ;;
     h) print_usage
       exit 0 ;;
     m) m_flag='true' ;;
     n) fNum="${OPTARG}" ;;
+    p) p_flag='true' ;;
     x) x_flag='true' ;;
     *) print_usage
       exit 1 ;;
   esac
 done
 
+# When -n flag is not used, ask the user to input a value
 if [[ $fNum = '' ]]; then
   read -p "Enter number of files to match : " fNum
 fi
 
-list=()
 # Grab output from find command and add each line to array
-  while IFS= read -r line; do
-    list+=( "$line" )
-  done < <( find -type d )
+while IFS= read -r line; do
+  list+=( "$line" )
+done < <( find -type d )
 
-unset list[0] # Remove current dir
-list=( "${list[@]}" ) # Re-index array
+# Exclude parent directory itself by default. Include with -p flag
+if [[ $p_flag != 'true' ]]; then
+  unset list[0] # Remove current dir
+  list=( "${list[@]}" ) # Re-index array
+fi
 
+# Perform action based on number of files found in each directory
 listLength=${#list[@]}
   for (( i=0; i<${listLength}; i++ )); do
     listCount+=( $(find "${list[$i]}" -type f | wc -l) )
   done
 
 # loops for processed outputs
-# -m
+# Move formatted -m
 if [[ $m_flag = 'true' ]]; then
   for i in "${!list[@]}"; do
     if [[ $x_flag = 'true' ]]; then
@@ -57,7 +64,7 @@ if [[ $m_flag = 'true' ]]; then
     fi
   done
 
-# -d
+# Delete formatted -d
 elif [[ $d_flag = 'true' ]]; then
   for i in "${!list[@]}"; do
     if [[ $x_flag = 'true' ]]; then
@@ -72,6 +79,7 @@ elif [[ $d_flag = 'true' ]]; then
     fi
   done
 
+# Base format
 else
   for i in "${!list[@]}"; do
     if [[ "${listCount[i]}" = "${fNum}" ]]; then
