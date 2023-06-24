@@ -2,24 +2,30 @@
 
 d_flag=''
 m_flag=''
+fNum=''
 verbose='false'
+x_flag=''
 
 print_usage() {
   printf "Usage: ..."
 }
 
-while getopts 'dhmv' flag; do
+while getopts 'dhmn:vx' flag; do
   case "${flag}" in
     d) d_flag='true' ;;
     h) print_usage
       exit 0 ;;
     m) m_flag='true' ;;
+    n) fNum="${OPTARG}" ;;
+    x) x_flag='true' ;;
     *) print_usage
       exit 1 ;;
   esac
 done
 
-read -p "Enter number of files to match : " fNum
+if [[ $fNum = '' ]]; then
+  read -p "Enter number of files to match : " fNum
+fi
 
 list=()
 # Grab output from find command and add each line to array
@@ -35,21 +41,34 @@ listLength=${#list[@]}
     listCount+=( $(find "${list[$i]}" -type f | wc -l) )
   done
 
-# if loops for processed outputs
+# loops for processed outputs
+# -m
 if [[ $m_flag = 'true' ]]; then
   for i in "${!list[@]}"; do
-    if [[ "${listCount[i]}" = "${fNum}" ]]; then
-      output+=( $(echo -n "${list[$i]}" | sed 's|.*|"&\/"* |' ) )
+    if [[ $x_flag = 'true' ]]; then
+      if [[ "${listCount[i]}" = "${fNum}" ]]; then
+        output+=( $(echo -n "${list[$i]}" | sed 's|.*|"&\/"* |' ) )
+      fi
+      printf '%s ' "${output[@]}" | xclip -selection clipboard # Printf used to join the array
+    else
+      if [[ "${listCount[i]}" = "${fNum}" ]]; then
+        echo -n "${list[$i]}" | sed 's|.*|"&\/"* |'
+      fi
     fi
   done
-# xclip option
-printf '%s ' "${output[@]}" | xclip -selection clipboard # Printf used to join the array
 
-
+# -d
 elif [[ $d_flag = 'true' ]]; then
   for i in "${!list[@]}"; do
-    if [[ "${listCount[i]}" = "${fNum}" ]]; then
-      echo -n "${list[$i]}" | sed 's|.*|"&\/" |'
+    if [[ $x_flag = 'true' ]]; then
+      if [[ "${listCount[i]}" = "${fNum}" ]]; then
+        output+=( $(echo -n "${list[$i]}" | sed 's|.*|"&\/" |' ) )
+      fi
+      printf '%s ' "${output[@]}" | xclip -selection clipboard # Printf used to join the array
+    else
+      if [[ "${listCount[i]}" = "${fNum}" ]]; then
+        echo -n "${list[$i]}" | sed 's|.*|"&\/" |'
+      fi
     fi
   done
 
