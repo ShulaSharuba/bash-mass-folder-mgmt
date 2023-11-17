@@ -6,6 +6,15 @@ fNum=''
 p_flag=''
 verbose='false'
 x_flag=''
+dirCount=()
+flag=()
+list=()
+line=()
+line2=()
+listLength=()
+listCount=()
+output=()
+print_usage=()
 
 print_usage() {
   printf "Usage: ..."
@@ -42,14 +51,24 @@ if [[ $p_flag != 'true' ]]; then
   list=( "${list[@]}" ) # Re-index array
 fi
 
-# Perform action based on number of files found in each directory
+# Build arrays based on number of files found in each directory
 listLength=${#list[@]}
   for (( i=0; i<${listLength}; i++ )); do
     listCount+=( $(find "${list[$i]}" -type f | wc -l) )
   done
 
+# Grab the number of dirs that match the value of fNum
+# Might be a better way to do this...
+for i in "${!list[@]}"; do
+  if [[ "${listCount[i]}" = "${fNum}" ]]; then
+    while IFS= read -r line2; do
+      dirCount+=( "$line2" )
+    done < <( echo "${list[$i]}" )
+  fi
+done
+
 # loops for processed outputs
-# Move formatted -m
+# mv formatted -m
 if [[ $m_flag = 'true' ]]; then
   for i in "${!list[@]}"; do
     if [[ $x_flag = 'true' ]]; then
@@ -64,7 +83,7 @@ if [[ $m_flag = 'true' ]]; then
     fi
   done
 
-# Delete formatted -d
+# rm formatted -d
 elif [[ $d_flag = 'true' ]]; then
   for i in "${!list[@]}"; do
     if [[ $x_flag = 'true' ]]; then
@@ -82,8 +101,21 @@ elif [[ $d_flag = 'true' ]]; then
 # Base format
 else
   for i in "${!list[@]}"; do
-    if [[ "${listCount[i]}" = "${fNum}" ]]; then
-      echo "${list[$i]}"
+    if [[ $x_flag = 'true' ]]; then
+      if [[ "${listCount[i]}" = "${fNum}" ]]; then
+        output+=( $(echo "${list[$i]}" ) )
+      fi
+      echo -n "${output[@]}" | sed -r 's|(.)(./)|\1\n\2|g' | xclip -selection clipboard # still need to find a way to remove whitespace at end of each line
+    else
+      if [[ "${listCount[i]}" = "${fNum}" ]]; then
+        echo "${list[$i]}"
+      fi
     fi
   done
+fi
+
+if [[ $x_flag = 'true' ]]; then
+  echo "${#dirCount[@]} item(s) copied to clipboard"
+else
+  echo -e "\r\n${#dirCount[@]} item(s) listed"
 fi
